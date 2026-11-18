@@ -3,6 +3,8 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
 from app.errors import DomainError
 SENTINELS={"", "-", "N/A", "NULL", "未知"}
+# 允许在标准契约尾部追加的可选列；旧式日志缺这些列时按空值补齐，多余列仍隔离。
+OPTIONAL_COLUMNS=("signed_flow",)
 def number(value, nullable=False):
     value=unicodedata.normalize("NFKC", str(value)).strip()
     if value.upper() in SENTINELS or value in SENTINELS:
@@ -42,9 +44,17 @@ def rows_from(raw, required):
         for cells in reader:
             if not cells or not any(v.strip() for v in cells): blank+=1;continue
             total+=1
-            if len(cells)!=len(header):
+            # 旧式表头缺少尾部可选列、数据行也相应缺值时按空值补齐；
+            # 表头已含可选列则必须逐列填齐，列数过多或缺失非可选列仍隔离。
+            absent=[c for c in OPTIONAL_COLUMNS if c not in header]
+            missing=len(header)-len(cells)
+            if absent and 0<missing<=len(absent):
+                fill=absent[:missing]
+                cells=cells+[""]*missing;fill_header=header+fill
+            else:fill_header=header
+            if len(cells)!=len(fill_header):
                 quarantine.append(rejected({"_line":reader.line_num},"COLUMN_COUNT",repr(cells)));continue
-            row=dict(zip(header,(v.strip() for v in cells)));row["_line"]=reader.line_num
+            row=dict(zip(fill_header,(v.strip() for v in cells)));row["_line"]=reader.line_num
             good.append(row)
     except csv.Error: raise DomainError("CSV","CSV引号未闭合")
     if total==0: raise DomainError("HEADER_ONLY","只有字段名")

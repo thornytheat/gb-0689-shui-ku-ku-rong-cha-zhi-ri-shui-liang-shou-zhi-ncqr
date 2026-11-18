@@ -28,6 +28,8 @@
 | TRAP-14 | 同刻水文矛盾 | 静默填补或算错 | 明确隔离和守恒 | `app/modules/m2_curve/rules.py` | `tests/test_m2_curve.py::test_real_conflict` |
 | TRAP-15 | 升每秒换算 | 静默填补或算错 | 明确隔离和守恒 | `app/modules/m2_curve/rules.py` | `tests/test_m2_curve.py::test_unit_conversion` |
 | TRAP-23 | 午夜切分 | 静默填补或算错 | 明确隔离和守恒 | `app/modules/m5_budget/rules.py` | `tests/test_m5_budget.py::test_midnight_split` |
+| TRAP-31 | 泵站跨午夜换向 | 把整段净量在两端各记一次，算出同时双向过水 | 日界与带符号流量过零点按Decimal比例拆段，正负半段分计进出库，净量=进−出 | `app/modules/m5_budget/rules.py` `app/modules/m3_integrate/rules.py` | `tests/test_pump_budget.py::test_pump_midnight_reversal_split_across_days` |
+| TRAP-32 | 带符号流量毛量 | 段内换向净量抵消后只挂一个方向，两向水量无法核对 | 过零切成两三角形分别累计 in_m3/out_m3，M3 段级与 M5 日切同口径守恒 | `app/modules/m3_integrate/rules.py` | `tests/test_pump_budget.py::test_pump_reversal_splits_directions` |
 
 ## 对账规则
 
@@ -37,3 +39,4 @@
 ## 已知不覆盖
 
 库容曲线采用线性分段，不作范围外推；流量与水位相邻点间线性变化。未建蒸发降雨及地下渗漏模型，收支差保留待人工归因。
+双向泵站仅采信带符号流量做计量与对账，不接泵站控制（无下发/控制接口）；泵站覆盖不足24h的日期仍待补测，不做插补。signed_flow 仅作为契约尾部可选列，不支持置于表头中部。

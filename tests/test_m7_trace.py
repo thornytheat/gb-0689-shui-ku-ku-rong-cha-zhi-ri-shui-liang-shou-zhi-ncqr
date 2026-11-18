@@ -9,7 +9,7 @@ def test_row_count_failure():
     with pytest.raises(DomainError):trace([],[],1,[],[])
 
 def test_water_failure():
-    with pytest.raises(DomainError):trace([],[],0,[{'in_m3':D(1)}],[])
+    with pytest.raises(DomainError):trace([],[],0,[{'in_m3':D(1),'out_m3':D(0),'net_m3':D(1)}],[])
 
 def test_empty():
     assert trace([],[],0,[],[])['watermarks']=={}
